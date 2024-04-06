@@ -1,27 +1,31 @@
+import math
 from __future__ import annotations
 import random
-import numpy as np
 
-from src.vector_search import knn
 
 class Vertex:
-    def __init__(self, vector, num_layers):
+    def __init__(self, vector: list[float], num_layers: int):
         self.vector = vector
-        self.edges = np.array()
+        self.edges = [[] for _ in range(num_layers)]
 
-    
-    def add_edge(self, vertex: Vertex, layer_index: int):
-        self.edges[layer_index] = np.append(self.edges[layer_index], vertex)
-        vertex.edges[layer_index] = np.append(vertex.edges, self)
+    def add_edge(self, vertex: Vertex, layer: int) -> None:
+        self.edges[layer].append(vertex)
+        vertex.edges[layer].append(self)
+
+    def get_edges_in_layer(self, layer: int) -> list[Vertex]:
+        return self.edges[layer]
 
 
-class Layer:
-    def __init__(self, vectors: np.ndarray, index: int=0):
-        self.vectors = vectors
-        self.index = index
+def knn(k: int, x: Vertex, neighbours: list[Vertex]) -> list[Vertex]:
+    def euclidean_distance(a: Vertex, b: Vertex) -> int:
+        distance_squared = 0
+        for x, y in zip(a.vector, b.vector):
+            distance_squared += (x - y) ** 2
+        return math.sqrt(distance_squared)
 
-    def add(self, x: Vertex):
-        self.vectors = np.append(self.vectors, x)
+    # TODO: implement clustering heuristic
+    nearest_neighbours = neighbours.sort(key=lambda n: euclidean_distance(x, n))[:k]
+    return nearest_neighbours 
 
 
 class HVSW:
@@ -35,7 +39,7 @@ class HVSW:
     def __init__(self, M=32, M_0=None, m_L=None):
         self.M = M
         self.M_0 = 2*M if M_0 is None else M_0
-        self.m_L = 1 / np.log(M) if m_L is None else m_L
+        self.m_L = 1 / math.log(M) if m_L is None else m_L
         self.layers = []
         self.layer_probs, self.cumulative_nn_per_level = self._set_layer_probs()
         self.num_layers = len(self.layer_probs)
@@ -47,7 +51,7 @@ class HVSW:
         probs = []
         layer_prob_low_threshold = 1e-9
         while True:
-            prob = np.exp(-level / self.m_L) * (1 - np.exp(-1 / self.m_L))
+            prob = math.exp(-level / self.m_L) * (1 - math.exp(-1 / self.m_L))
             if prob < layer_prob_low_threshold:
                 break
             probs.append(prob)
@@ -56,57 +60,28 @@ class HVSW:
             level += 1
         return probs, cumulative_nn_per_level
 
-    def query(self, x: np.array):
-        level = self._get_random_level() 
+    def add(self, x: Vertex) -> int:
+        insertion_layer = self._get_random_level() 
         ef = 1
-        entry_point = x
-        for i in range(self.num_layers-1, level, -1):
-            layer = self.layers[i]
-            nearest_neighbour = layer.knn(ef, entry_point)
+        entry_point: Vertex = self.layers[-1][-1] # TODO: update this
+        for i in range(self.num_layers-1, insertion_layer, -1):
+            nearest_neighbour = knn(k=ef, x=x, neighbours=entry_point.get_edges_in_layer(i))
             entry_point = nearest_neighbour
         
-        candidates = self.traverse_layers(entry_point=entry_point, start_index=level)
-
-
-    def add(self, x: Vertex):
-        level = self._get_random_level() 
-        ef = 1
-        entry_point = self.layers[-1][-1] # TODO: update this
-        for i in range(self.num_layers-1, level, -1):
-            nearest_neighbour = knn(k=ef, x=x.vector, neighbours=entry_point.edges[i])
-            entry_point = nearest_neighbour
-        
-        candidates = []
         ef_construction = 10
-        # Layer l
-        candidates = entry_point.edges[level]
-        nearest_neighbours = knn(k=ef_construction, x=x.vector, neighbours=candidates)
-        for neighbour in nearest_neighbours:
-            x.add_edge(neighbour)
-        
-        entry_points = nearest_neighbours
-        
-        # Layer l-1
-        for entry_point in entry_points:
-            nearest_neighbours = knn(k=ef_construction, x=x.vector, neighbours=entry_point.edges[l-1])
-
-
-
-    def traverse_layers(self, entry_point, start_index, candidates=None):
-        if candidates is None:
-            candidates = []
-        
-        for i in range(start_index, -1, -1):
-            layer = self.layers[start_index]
+        candidates_for_level = [entry_point]
+        for i in range(insertion_layer, -1, -1):
+            entry_points = candidates_for_level
+            candidates_for_level = []
+            for entry_point in entry_points:
+                nearest_neighbours = knn(k=ef_construction, x=x, neighbours=entry_point.get_edges_in_layer(i))
+                candidates_for_level.append(nearest_neighbours)
             k = self._get_num_neighbours(i)
-            nearest_neighbours = knn(k=k, x=entry_point, neighbours=layer.vectors)
-            if layer == 0:
-                return nearest_neighbours
-            for neighbour in nearest_neighbours:
-                candidates = candidates.extend(
-                    self.traverse_layers(entry_point=neighbour, start_index=i-1, candidates=candidates)
-                )
-        return candidates
+            edges = knn(k=k, x=x, neighbours=candidates_for_level)
+            for edge in edges:
+                x.add_edge(edge)
+        
+        return insertion_layer
 
     def _get_random_level(self):
         rand = random.uniform(0, 1)
