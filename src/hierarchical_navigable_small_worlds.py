@@ -84,21 +84,33 @@ class HNSW:
             entry_points = candidates_for_level
             candidates_for_level = []
             for entry_point in entry_points:
-                nearest_neighbours = knn(k=ef_construction, x=x, neighbours=entry_point.get_edges_in_layer(i))
-                candidates_for_level.append(nearest_neighbours)
+                nearest_neighbours = knn(
+                    k=ef_construction, x=x, neighbours=entry_point.get_edges_in_layer(i) + [entry_point]
+                )
+                candidates_for_level.extend(nearest_neighbours)
             k = self._get_num_neighbours(i)
-            edges = knn(k=k, x=x, neighbours=candidates_for_level)
-            for edge in edges:
-                x.add_edge(edge)
+            edges_to_add = knn(k=k, x=x, neighbours=candidates_for_level)
+            for edge in edges_to_add:
+                x.add_edge(vertex=edge, layer=i)
         
         return insertion_layer
+
+    def search(self, x: Vertex) -> Vertex:
+        ef = 1
+        entry_point: Vertex = self.entry_point
+        for i in range(self.num_layers-1, -1, -1):
+            nearest_neighbour = knn(k=ef, x=x, neighbours=entry_point.get_edges_in_layer(i)) + [entry_point]
+            if euclidean_distance(x, entry_point) < euclidean_distance(x, nearest_neighbour):
+                return entry_point
+            entry_point = nearest_neighbour
+        return entry_point
 
     def _get_random_level(self):
         rand = random.uniform(0, 1)
         for level in range(len(self.layer_probs)):
             if rand < self.layer_probs[level]:
                 return level
-            f -= self.layer_probs[level]
+            rand -= self.layer_probs[level]
         return len(self.layer_probs) - 1
 
     def _get_num_neighbours(self, layer_index):
