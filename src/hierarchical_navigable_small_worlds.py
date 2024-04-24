@@ -6,17 +6,26 @@ import random
 class Vertex:
     def __init__(self, vector: list[float], num_layers: int=0):
         self.vector = vector
-        self.edges = [[] for _ in range(num_layers)]
+        self.edges = [set() for _ in range(num_layers)]
 
     def add_edge(self, vertex: Vertex, layer: int) -> None:
-        self.edges[layer].append(vertex)
-        vertex.edges[layer].append(self)
+        self.edges[layer].add(vertex)
+        vertex.edges[layer].add(self)
 
-    def get_edges_in_layer(self, layer: int) -> list[Vertex]:
+    def get_edges_in_layer(self, layer: int) -> set[Vertex]:
         return self.edges[layer]
+
+    def get_neighbours_in_layer(self, layer: int) -> list[Vertex]:
+        return self.get_edges_in_layer(layer) | {self}
 
     def __eq__(self, vertex: Vertex) -> bool:
         return self.vector == vertex.vector
+
+    def __repr__(self) -> str:
+        return f"Vertex(vector={self.vector})"
+
+    def __hash__(self) -> int:
+        return hash(tuple(self.vector))
 
 
 def euclidean_distance(a: Vertex, b: Vertex) -> int:
@@ -72,7 +81,7 @@ class HNSW:
         entry_point: Vertex = self.entry_point
         for i in range(self.num_layers-1, insertion_layer, -1):
             nearest_neighbour = knn(
-                k=ef, x=x, neighbours=entry_point.get_edges_in_layer(i) + [entry_point]
+                k=ef, x=x, neighbours=entry_point.get_neighbours_in_layer(i)
             )[0]
             entry_point = nearest_neighbour
         
@@ -83,7 +92,7 @@ class HNSW:
             candidates_for_level = []
             for entry_point in entry_points:
                 nearest_neighbours = knn(
-                    k=ef_construction, x=x, neighbours=entry_point.get_edges_in_layer(i) + [entry_point]
+                    k=ef_construction, x=x, neighbours=entry_point.get_neighbours_in_layer(i)
                 )
                 candidates_for_level.extend(nearest_neighbours)
             k = self._get_num_neighbours(i)
@@ -97,7 +106,7 @@ class HNSW:
         ef = 1
         entry_point: Vertex = self.entry_point
         for i in range(self.num_layers-1, -1, -1):
-            nearest_neighbour = knn(k=ef, x=x, neighbours=entry_point.get_edges_in_layer(i)) + [entry_point]
+            nearest_neighbour = knn(k=ef, x=x, neighbours=entry_point.get_neighbours_in_layer(i))
             if euclidean_distance(x, entry_point) < euclidean_distance(x, nearest_neighbour):
                 return entry_point
             entry_point = nearest_neighbour
