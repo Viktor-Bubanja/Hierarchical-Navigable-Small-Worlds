@@ -106,7 +106,7 @@ class HNSW:
         ef = 1
         entry_point: Vertex = self.entry_point
         for i in range(self.num_layers-1, -1, -1):
-            nearest_neighbour = knn(k=ef, x=x, neighbours=entry_point.get_neighbours_in_layer(i))
+            nearest_neighbour = knn(k=ef, x=x, neighbours=entry_point.get_neighbours_in_layer(i))[0]
             if euclidean_distance(x, entry_point) < euclidean_distance(x, nearest_neighbour):
                 return entry_point
             entry_point = nearest_neighbour
