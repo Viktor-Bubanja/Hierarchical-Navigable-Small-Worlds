@@ -126,3 +126,47 @@ def test_add_sets_edges_of_input_vertex_as_well_as_edges_of_neighbours_in_all_ne
 
     assert input_vertices[5].edges[0] == {Vertex(vector=[4, 4, 4]), Vertex(vector=[3, 3, 3]), Vertex(vector=[2, 2, 2]), Vertex(vector=[1, 1, 1])}
     assert input_vertices[5].edges[1] == set()
+
+def test_search_finds_the_nearest_neighbour(mocker):
+    mock_random_levels = [0, 0, 1, 0, 0, 0, 1, 1]  # The layers that the input vertices will be inserted in
+    mocker.patch.object(HNSW, '_get_random_level', side_effect=mock_random_levels)
+    mock_probabilities = [0.5, 0.5]  # The probabilities of inserting an edge into each layer
+    mocker.patch.object(HNSW, '_set_layer_probabilities', return_value=mock_probabilities)
+    hnsw = HNSW(M=2)
+    input_vertices = [
+        Vertex(
+            vector=[0, 0, 0],
+            num_layers=hnsw.num_layers
+        ),
+        Vertex(
+            vector=[1, 1, 1],
+            num_layers=hnsw.num_layers
+        ),
+        Vertex(
+            vector=[2, 2, 2],
+            num_layers=hnsw.num_layers
+        ),
+        Vertex(
+            vector=[3, 3, 3],
+            num_layers=hnsw.num_layers
+        ),
+        Vertex(
+            vector=[4, 4, 4],
+            num_layers=hnsw.num_layers
+        ),
+        Vertex(
+            vector=[5, 5, 5],
+            num_layers=hnsw.num_layers
+        ),
+    ]
+    for input_vertex in input_vertices:
+        hnsw.add(x=input_vertex)
+
+    nearest_neighbour = hnsw.search(Vertex(vector=[1.5, 0.5, 1.5], num_layers=hnsw.num_layers))
+    assert nearest_neighbour == Vertex(vector=[1, 1, 1], num_layers=hnsw.num_layers)
+
+    nearest_neighbour = hnsw.search(Vertex(vector=[3.1, 2.9, 3.6], num_layers=hnsw.num_layers))
+    assert nearest_neighbour == Vertex(vector=[3, 3, 3], num_layers=hnsw.num_layers)
+
+    nearest_neighbour = hnsw.search(Vertex(vector=[10, 10, 10], num_layers=hnsw.num_layers))
+    assert nearest_neighbour == Vertex(vector=[5, 5, 5], num_layers=hnsw.num_layers)
