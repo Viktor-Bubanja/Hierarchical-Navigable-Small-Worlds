@@ -40,7 +40,7 @@ def test_knn_returns_k_closest_vectors_to_given_vector():
     ]
     assert nearest_neighbours == expected_nearest_neighbours
 
-def test_set_layer_probs_sets_expected_probabilities_and_cumulative_neighbour_counts():
+def test_set_layer_probs_sets_expected_probabilities():
     hnsw = HNSW(M=32, M_0=None, m_L=None)
     assert hnsw.layer_probs == [
         0.96875,
@@ -50,7 +50,6 @@ def test_set_layer_probs_sets_expected_probabilities_and_cumulative_neighbour_co
         9.23871994018553e-07,
         2.887099981307982e-08,
     ]
-    assert hnsw.cumulative_nn_per_level == [64, 96, 128, 160, 192, 224]
 
 
 def test_add_sets_entry_point_if_index_is_empty():

@@ -44,13 +44,12 @@ class HNSW:
         self.M = M
         self.M_0 = 2*M if M_0 is None else M_0
         self.m_L = 1 / math.log(M) if m_L is None else m_L
-        self.layer_probs, self.cumulative_nn_per_level = self._set_layer_probabilities()
+        self.layer_probs = self._set_layer_probabilities()
         self.num_layers = len(self.layer_probs)
         self.entry_point = None
 
-    def _set_layer_probabilities(self):
+    def _set_layer_probabilities(self) -> list[float]:
         nn = 0
-        cumulative_nn_per_level = []
         level = 0
         probs = []
         layer_prob_low_threshold = 1e-9
@@ -60,9 +59,8 @@ class HNSW:
                 break
             probs.append(prob)
             nn += self.M_0 if level == 0 else self.M
-            cumulative_nn_per_level.append(nn)
             level += 1
-        return probs, cumulative_nn_per_level
+        return probs
 
     def add(self, x: Vertex) -> int:
         if self.entry_point is None:
