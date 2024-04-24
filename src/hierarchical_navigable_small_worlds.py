@@ -115,7 +115,3 @@ class HNSW:
 
     def _get_num_neighbours(self, layer_index):
         return self.M_0 if layer_index == 0 else self.M
-
-
-
-
