@@ -1,6 +1,6 @@
 import pytest
 
-from src.hierarchical_navigable_small_worlds import HNSW, Vertex, knn
+from src.hnsw import HNSW, Vertex, knn
 
 
 # Mock the knn function to return the first k elements
