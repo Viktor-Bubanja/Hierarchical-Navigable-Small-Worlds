@@ -36,7 +36,6 @@ def euclidean_distance(a: Vertex, b: Vertex) -> int:
 
 
 def knn(k: int, x: Vertex, neighbours: list[Vertex]) -> list[Vertex]:
-    # TODO: implement clustering heuristic
     nearest_neighbours = sorted(neighbours, key=lambda n: euclidean_distance(x, n))[:k]
     return nearest_neighbours 
 
