@@ -1,4 +1,5 @@
 import pytest
+
 from src.hierarchical_navigable_small_worlds import HNSW, Vertex, knn
 
 
