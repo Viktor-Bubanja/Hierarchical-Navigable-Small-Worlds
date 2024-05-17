@@ -5,7 +5,7 @@ import random
 
 
 class Vertex:
-    def __init__(self, vector: list[float], num_layers: int=0):
+    def __init__(self, vector: list[float], num_layers: int = 0):
         self.vector = vector
         self.edges = [set() for _ in range(num_layers)]
 
@@ -38,7 +38,7 @@ def euclidean_distance(a: Vertex, b: Vertex) -> int:
 
 def knn(k: int, x: Vertex, neighbours: list[Vertex]) -> list[Vertex]:
     nearest_neighbours = sorted(neighbours, key=lambda n: euclidean_distance(x, n))[:k]
-    return nearest_neighbours 
+    return nearest_neighbours
 
 
 class HNSW:
@@ -49,9 +49,10 @@ class HNSW:
     m_L is the non-zero 'level multiplier' that normalizes the exponentially decaying probability distribution
     which determines which layer a given node belongs to.
     """
+
     def __init__(self, M=32, M_0=None, m_L=None):
         self.M = M
-        self.M_0 = 2*M if M_0 is None else M_0
+        self.M_0 = 2 * M if M_0 is None else M_0
         self.m_L = 1 / math.log(M) if m_L is None else m_L
         self.layer_probs = self._set_layer_probabilities()
         self.num_layers = len(self.layer_probs)
@@ -76,15 +77,15 @@ class HNSW:
             self.entry_point = x
             return self.num_layers - 1
 
-        insertion_layer = self._get_random_level() 
+        insertion_layer = self._get_random_level()
         ef = 1
         entry_point: Vertex = self.entry_point
-        for i in range(self.num_layers-1, insertion_layer, -1):
+        for i in range(self.num_layers - 1, insertion_layer, -1):
             nearest_neighbour = knn(
                 k=ef, x=x, neighbours=entry_point.get_neighbours_in_layer(i)
             )[0]
             entry_point = nearest_neighbour
-        
+
         ef_construction = 10
         candidates_for_level = [entry_point]
         for i in range(insertion_layer, -1, -1):
@@ -92,22 +93,28 @@ class HNSW:
             candidates_for_level = []
             for entry_point in entry_points:
                 nearest_neighbours = knn(
-                    k=ef_construction, x=x, neighbours=entry_point.get_neighbours_in_layer(i)
+                    k=ef_construction,
+                    x=x,
+                    neighbours=entry_point.get_neighbours_in_layer(i),
                 )
                 candidates_for_level.extend(nearest_neighbours)
             k = self._get_num_neighbours(i)
             edges_to_add = knn(k=k, x=x, neighbours=candidates_for_level)
             for edge in edges_to_add:
                 x.add_edge(vertex=edge, layer=i)
-        
+
         return insertion_layer
 
     def search(self, x: Vertex) -> Vertex:
         ef = 1
         entry_point: Vertex = self.entry_point
-        for i in range(self.num_layers-1, -1, -1):
-            nearest_neighbour = knn(k=ef, x=x, neighbours=entry_point.get_neighbours_in_layer(i))[0]
-            if euclidean_distance(x, entry_point) < euclidean_distance(x, nearest_neighbour):
+        for i in range(self.num_layers - 1, -1, -1):
+            nearest_neighbour = knn(
+                k=ef, x=x, neighbours=entry_point.get_neighbours_in_layer(i)
+            )[0]
+            if euclidean_distance(x, entry_point) < euclidean_distance(
+                x, nearest_neighbour
+            ):
                 return entry_point
             entry_point = nearest_neighbour
         return entry_point
