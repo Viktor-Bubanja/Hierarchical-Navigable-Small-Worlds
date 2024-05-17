@@ -163,6 +163,11 @@ def test_add_sets_edges_of_input_vertex_as_well_as_edges_of_neighbours_in_all_ne
     assert input_vertices[5].edges[1] == set()
 
 
+def test_add_raises_exception_if_dimension_is_not_consistent(populated_hnsw):
+    with pytest.raises(ValueError):
+        populated_hnsw.add(Vertex(vector=[1, 1], num_layers=populated_hnsw.num_layers))
+
+
 def test_search_finds_the_nearest_neighbour(mocker):
     mock_random_levels = [
         0,

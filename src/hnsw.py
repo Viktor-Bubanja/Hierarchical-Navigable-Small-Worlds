@@ -42,6 +42,11 @@ class HNSW:
             self.entry_point = x
             return self.num_layers - 1
 
+        if len(x.vector) != len(self.entry_point.vector):
+            raise ValueError(
+                f"All vectors must have the same dimension, existing vector dimensions: {len(self.entry_point.vector)}, input vector dimension: {len(x.vector)}"
+            )
+
         insertion_layer = self._get_random_level()
         ef = 1
         entry_point: Vertex = self.entry_point
