@@ -84,6 +84,15 @@ def test_add_sets_entry_point_if_index_is_empty():
     ), "The first vertex should be inserted in the last layer."
 
 
+def test_add_accepts_a_list_and_converts_it_to_a_vertex():
+    hnsw = HNSW(M=32, M_0=None, m_L=None)
+    input_vertex = [1, 1, 1]
+    hnsw.add(x=input_vertex)
+    assert hnsw.entry_point == Vertex(
+        vector=input_vertex, num_layers=hnsw.num_layers
+    ), "The first vertex should be the entry point."
+
+
 def test_add_sets_edges_between_vertices_in_both_directions(populated_hnsw):
     new_vertex = Vertex(vector=[10], num_layers=populated_hnsw.num_layers)
     insertion_layer = populated_hnsw.add(new_vertex)
@@ -199,3 +208,8 @@ def test_search_finds_the_nearest_neighbour(mocker):
         Vertex(vector=[10, 10, 10], num_layers=hnsw.num_layers)
     )
     assert nearest_neighbour == Vertex(vector=[5, 5, 5], num_layers=hnsw.num_layers)
+
+
+def test_search_accepts_a_list_and_converts_it_to_a_vector(populated_hnsw):
+    nearest_neighbour = populated_hnsw.search([1.5, 0.5, 1.5])
+    assert nearest_neighbour

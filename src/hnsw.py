@@ -35,7 +35,10 @@ class HNSW:
             level += 1
         return probs
 
-    def add(self, x: Vertex) -> int:
+    def add(self, x: Vertex | None) -> int:
+        if x.__class__ == list:
+            x = Vertex(vector=x, num_layers=self.num_layers)
+
         if self.entry_point is None:
             self.entry_point = x
             return self.num_layers - 1
@@ -69,6 +72,9 @@ class HNSW:
         return insertion_layer
 
     def search(self, x: Vertex) -> Vertex:
+        if x.__class__ == list:
+            x = Vertex(vector=x, num_layers=self.num_layers)
+
         ef = 1
         entry_point: Vertex = self.entry_point
         for i in range(self.num_layers - 1, -1, -1):
