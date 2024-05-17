@@ -6,7 +6,6 @@ from src.vertex import Vertex, euclidean_distance, knn
 
 class HNSW:
     """
-    d is the dimensionality of the vectors.
     M is the number of edges of each vertex in the graph.
     M_0 is the number of edges of each vertex in the lowest layer of the graph.
     m_L is the non-zero 'level multiplier' that normalizes the exponentially decaying probability distribution
